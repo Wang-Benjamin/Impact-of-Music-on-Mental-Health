@@ -1,0 +1,288 @@
+---
+title: "STA303 - Final Project"
+author: "Yakun Wang - 1007377358"
+date: "April 7, 2024"
+output:
+  pdf_document: default
+---
+
+```{r}
+library(readr)
+library(tidyverse)
+library(knitr)
+
+# # Load the original data and clean data
+mmh_data <- read_csv("mmh_survey_data.csv")
+mmh <- mmh_data %>% 
+  na.omit() %>% 
+  rename(Hours = `Hours per day`,
+         While_working = `While working`,
+         Favourite = `Fav genre`,
+         Foreign = `Foreign languages`,
+         Classical_freq = `Frequency [Classical]`,
+         Country_freq = `Frequency [Country]`,
+         EDM_freq = `Frequency [EDM]`,
+         Folk_freq = `Frequency [Folk]`,
+         Gospel_freq = `Frequency [Gospel]`,
+         Hippop_freq = `Frequency [Hip hop]`,
+         Jazz_freq = `Frequency [Jazz]`,
+         Kpop_freq = `Frequency [K pop]`,
+         Latin_freq = `Frequency [Latin]`,
+         Lofi_freq = `Frequency [Lofi]`,
+         Metal_freq = `Frequency [Metal]`,
+         Pop_freq = `Frequency [Pop]`,
+         RnB_freq = `Frequency [R&B]`,
+         Rap_freq = `Frequency [Rap]`,
+         Rock_freq = `Frequency [Rock]`,
+         VGM_freq = `Frequency [Video game music]`,
+         Music_effects = `Music effects`) %>%
+  mutate(Music_effects = ifelse(Music_effects == "Improve", "Improve", "No effect")) %>%
+  select(Age, Hours, While_working, Instrumentalist, Composer, Favourite, Exploratory,
+         Foreign, BPM, Classical_freq, Country_freq, EDM_freq, Folk_freq, Gospel_freq, Hippop_freq, 
+         Jazz_freq, Kpop_freq, Latin_freq, Lofi_freq, Metal_freq, Pop_freq, 
+         RnB_freq, Rap_freq, Rock_freq, VGM_freq, Anxiety, Depression, Insomnia, OCD, Music_effects)
+
+# Randomly split cleaned data into training set (75%) and test set (25%)
+rows <- sample(1:616, 462, replace = FALSE)
+training <- mmh[rows,]
+test <- mmh[-rows,]
+
+# Summary for all variables
+summary(mmh)
+
+# Number of rows containing NULL values in the original data
+NULL_values <- colSums(is.na(mmh_data))
+NULL_values
+```
+
+
+```{r}
+# EDA
+library(ggplot2)
+library(ggpubr)
+attach(mmh)
+ggplot(data = mmh, aes(x=Favourite)) + geom_bar(color="black",fill="gray") + labs(x = "Respondent's favorite music genre")
+
+par(mfrow=c(1, 2))
+hist(Anxiety, main = "Self-reported anxiety")
+hist(Depression, main = "Self-reported depression")
+
+par(mfrow=c(1, 2))
+hist(Insomnia, main = "Self-reported insomnia")
+hist(OCD, main = "Self-reported OCD")
+
+par(mfrow=c(1, 2))
+hist(Age, main = "Age of respondents")
+hist(Hours, main = "Listening to music hours/per day")
+
+par(mfrow = c(1, 1))
+t1 <- table(While_working)
+pie(t1, col = hcl.colors(length(t1), "BluYl"), radius = 0.85, main = "Listen to music while working/studying")
+
+par(mfrow = c(1, 1))
+t2 <- table(Foreign)
+pie(t2, col = hcl.colors(length(t2), "BluYl"), radius = 0.85, main = "Listen to music in a foreign language")
+
+par(mfrow = c(1, 1))
+t3 <- table(Music_effects)
+pie(t3, col = hcl.colors(length(t3), "BluYl"), radius = 0.85, main = "Effect of music on mental health")
+
+par(mfrow = c(1, 1))
+t4 <- table(Instrumentalist)
+pie(t4, col = hcl.colors(length(t4), "BluYl"), radius = 0.85, main = "Whether play an instrument regularly")
+
+par(mfrow = c(1, 1))
+t5 <- table(Composer)
+pie(t5, col = hcl.colors(length(t5), "BluYl"), radius = 0.85, main = "Whether compose music")
+
+par(mfrow = c(1, 1))
+t6 <- table(Exploratory)
+pie(t6, col = hcl.colors(length(t6), "BluYl"), radius = 0.85, main = "Whether actively explore new artists/genres")
+
+a = ggplot(data = mmh, aes(x=Age,fill=Music_effects)) + geom_histogram(position="dodge",binwidth=1)
+b = ggplot(data = mmh, aes(x=Hours,fill=Music_effects)) + geom_histogram(position="dodge",binwidth=1)
+ggarrange(a,b, ncol = 2, nrow = 1)
+
+g1=ggplot(data=mmh, aes(x=Classical_freq, fill=Music_effects)) + geom_bar()
+g2=ggplot(data=mmh, aes(x=Country_freq, fill=Music_effects)) + geom_bar()
+g3=ggplot(data=mmh, aes(x=EDM_freq, fill=Music_effects)) + geom_bar()
+g4=ggplot(data=mmh, aes(x=Folk_freq, fill=Music_effects)) + geom_bar()
+ggarrange(g1,g2,g3,g4, ncol = 2, nrow = 2)
+
+g5=ggplot(data=mmh, aes(x=Gospel_freq, fill=Music_effects)) + geom_bar()
+g6=ggplot(data=mmh, aes(x=Hippop_freq, fill=Music_effects)) + geom_bar()
+g7=ggplot(data=mmh, aes(x=Jazz_freq, fill=Music_effects)) + geom_bar()
+g8=ggplot(data=mmh, aes(x=Kpop_freq, fill=Music_effects)) + geom_bar()
+ggarrange(g5,g6,g7,g8, ncol = 2, nrow = 2)
+
+g9=ggplot(data=mmh, aes(x=Latin_freq, fill=Music_effects)) + geom_bar()
+g10=ggplot(data=mmh, aes(x=Lofi_freq, fill=Music_effects)) + geom_bar()
+g11=ggplot(data=mmh, aes(x=Metal_freq, fill=Music_effects)) + geom_bar()
+g12=ggplot(data=mmh, aes(x=Pop_freq, fill=Music_effects)) + geom_bar()
+ggarrange(g9,g10,g11,g12, ncol = 2, nrow = 2)
+
+g13=ggplot(data=mmh, aes(x=RnB_freq, fill=Music_effects)) + geom_bar()
+g14=ggplot(data=mmh, aes(x=Rap_freq, fill=Music_effects)) + geom_bar()
+g15=ggplot(data=mmh, aes(x=Rock_freq, fill=Music_effects)) + geom_bar()
+g16=ggplot(data=mmh, aes(x=VGM_freq, fill=Music_effects)) + geom_bar()
+ggarrange(g13,g14,g15,g16, ncol = 2, nrow = 2)
+```
+
+
+```{r}
+set.seed(1007377358)
+# Model fitting using training dataset
+model1 <- glm(as.factor(Music_effects) ~ ., data = training, family = "binomial")
+summary(model1)
+
+# Use AIC to get a reduced model with only significant variables
+sel.var.aic <- step(model1, trace = 0, k = 2, direction = "both") 
+select_var_aic <- attr(terms(sel.var.aic), "term.labels")   
+select_var_aic
+
+# Fit a new model with the variable selected by AIC method
+reduced.model.aic <- glm(as.factor(Music_effects) ~ While_working + Composer + Exploratory + EDM_freq + Gospel_freq
+                     + Pop_freq + Anxiety + Depression + Insomnia, data = training, family = "binomial")
+summary(reduced.model.aic)
+
+# Use BIC to get a reduced model with only significant variables
+sel.var.bic <- step(model1, trace = 0, k = log(nrow(training)), direction = "both") 
+select_var_bic <- attr(terms(sel.var.bic), "term.labels")   
+select_var_bic
+
+# Fit a new model with the variable selected by BIC method
+reduced.model.bic <- glm(as.factor(Music_effects) ~ While_working + Anxiety, data = training, family = "binomial")
+summary(reduced.model.bic)
+
+# LASSO
+library(glmnet)
+x <- as.matrix(training[,-which(colnames(training) == "Music_effects")]) # predictors matrix
+y <- training$Music_effects
+
+cv.out = cv.glmnet(x, y, family = "binomial", type.measure = "class", alpha = 0.5)
+best.lambda <- cv.out$lambda.1se
+co <- coef(cv.out, s = "lambda.1se")
+
+thresh <- 0.00
+# select variables #
+inds <- which(abs(co) > thresh )
+variables <- row.names(co)[inds]
+sel.var.lasso <- variables[!(variables %in% '(Intercept)')]
+sel.var.lasso
+
+# No variables are selected by LASSO
+```
+
+
+```{r}
+# For model selected by AIC
+# Cross Validation
+library(rms)
+## Fit the model with lrm from rms package ##
+lrm.final.aic <- lrm(as.factor(Music_effects) ~ While_working + Composer + Exploratory + EDM_freq + Gospel_freq
+                 + Pop_freq + Anxiety + Depression + Insomnia, data = training, x = TRUE, y = TRUE, model= T)
+cross.calib <- calibrate(lrm.final.aic, method="crossvalidation", B=10) # model calibration
+plot(cross.calib, las=1, xlab = "Predicted Probability")
+
+# Discrimination with ROC curve
+library(pROC)
+p <- predict(lrm.final.aic, type = "fitted")
+roc_logit <- roc(training$Music_effects ~ p)
+## The True Positive Rate ##
+TPR <- roc_logit$sensitivities
+## The False Positive Rate ##
+FPR <- 1 - roc_logit$specificities
+
+plot(FPR, TPR, xlim = c(0,1), ylim = c(0,1), type = 'l', lty = 1, lwd = 2,col = 'red')
+abline(a = 0, b = 1, lty = 2, col = 'blue')
+text(0.7,0.4,label = paste("AUC = ", round(auc(roc_logit),2)))
+auc(roc_logit)
+
+# For model selected by BIC
+# Cross Validation
+library(rms)
+## Fit the model with lrm from rms package ##
+lrm.final.bic <- lrm(as.factor(Music_effects) ~ While_working + Anxiety, data = training, x = TRUE, y = TRUE, model= T)
+cross.calib <- calibrate(lrm.final.bic, method="crossvalidation", B=10) # model calibration
+plot(cross.calib, las=1, xlab = "Predicted Probability")
+
+# Discrimination with ROC curve
+library(pROC)
+p <- predict(lrm.final.bic, type = "fitted")
+roc_logit <- roc(training$Music_effects ~ p)
+## The True Positive Rate ##
+TPR <- roc_logit$sensitivities
+## The False Positive Rate ##
+FPR <- 1 - roc_logit$specificities
+
+plot(FPR, TPR, xlim = c(0,1), ylim = c(0,1), type = 'l', lty = 1, lwd = 2,col = 'red')
+abline(a = 0, b = 1, lty = 2, col = 'blue')
+text(0.7,0.4,label = paste("AUC = ", round(auc(roc_logit),2)))
+auc(roc_logit)
+```
+
+
+```{r}
+# Dfbetas
+log.mod.final <- glm(as.factor(Music_effects) ~ While_working + Composer + Exploratory + EDM_freq + Gospel_freq 
+                     + Pop_freq + Anxiety + Depression + Insomnia, data=training,family="binomial") 
+df.final <- dfbetas(log.mod.final)
+head(df.final)
+
+par(family = 'serif')
+plot(training$Anxiety, df.final[,7], xlab='Self-reported anxiety', ylab='dfbeta')
+lines(lowess(training$Anxiety, df.final[,7]), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+abline(h=-2/sqrt(nrow(df.final)), lty='dotted')
+abline(h=2/sqrt(nrow(df.final)), lty='dotted')
+
+plot(training$Depression, df.final[,8], xlab='Self-reported depression', ylab='dfbeta')
+lines(lowess(training$Depression, df.final[,8]), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+abline(h=-2/sqrt(nrow(df.final)), lty='dotted')
+abline(h=2/sqrt(nrow(df.final)), lty='dotted')
+
+plot(training$Insomnia, df.final[,9], xlab='Self-reported insomnia', ylab='dfbeta')
+lines(lowess(training$Insomnia, df.final[,9]), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+abline(h=-2/sqrt(nrow(df.final)), lty='dotted')
+abline(h=2/sqrt(nrow(df.final)), lty='dotted')
+```
+
+
+```{r}
+# Plot the deviance residuals
+res.dev <- residuals(log.mod.final, type = "deviance")
+par(family = 'serif')
+plot(training$Anxiety, res.dev, xlab='Self-reported anxiety', ylab='Deviance Residuals')
+lines(lowess(training$Anxiety, res.dev), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+
+plot(training$Depression, res.dev, xlab='Self-reported depression', ylab='Deviance Residuals')
+lines(lowess(training$Depression, res.dev), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+
+plot(training$Insomnia, res.dev, xlab='Self-reported insomnia', ylab='Deviance Residuals')
+lines(lowess(training$Insomnia, res.dev), lwd=2, col='blue')
+abline(h=0, lty='dotted')
+```
+
+
+```{r}
+# Test set prediction
+n= nrow(test)
+test$Music_effects <- ifelse(test$Music_effects == "Improve", 1, 0)
+pre.prob = predict(reduced.model, test, type="response")
+pre.prob <- ifelse(pre.prob < 0.5, 0, 1)
+
+# Calculate the number of correct predictions
+correct_predictions = sum(test$Music_effects == pre.prob)
+
+# Calculate accuracy
+accuracy = correct_predictions / n
+accuracy
+```
+
+
+
+
