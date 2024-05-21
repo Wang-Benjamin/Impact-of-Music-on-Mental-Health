@@ -1,6 +1,6 @@
 ---
 title: "STA303 - Final Project"
-author: "Yakun Wang - 1007377358"
+author: "Yakun Wang"
 date: "April 7, 2024"
 output:
   pdf_document: default
